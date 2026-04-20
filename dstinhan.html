@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ôn tập Tin học 12 - Học đến khi thuộc lòng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        .choice-btn { transition: all 0.2s; }
+        
+        .btn-selected { 
+            background-color: #1d4ed8 !important; 
+            color: white !important; 
+            border-color: #1d4ed8 !important;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+        }
+
+        .result-correct { 
+            background-color: #10b981 !important; 
+            color: white !important; 
+            border-color: #10b981 !important; 
+        }
+
+        .result-wrong { 
+            background-color: #ef4444 !important; 
+            color: white !important; 
+            border-color: #ef4444 !important; 
+        }
+
+        .truth-outline {
+            outline: 3px dashed #10b981;
+            outline-offset: 2px;
+            position: relative;
+        }
+        
+        .truth-label {
+            position: absolute;
+            top: -12px;
+            right: 0;
+            background: #10b981;
+            color: white;
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-3xl mx-auto">
+        <header class="mb-8 flex justify-between items-end">
+            <div>
+                <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Ôn tập Tin học 12</h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <p class="text-slate-500 text-sm font-medium">Học đến khi thuộc lòng</p>
+                </div>
+            </div>
+            <div class="bg-white px-5 py-3 rounded-2xl shadow-sm border border-slate-200 text-center">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Câu còn lại</div>
+                <div id="remaining-count" class="text-2xl font-black text-blue-600">0</div>
+            </div>
+        </header>
+
+        <div class="h-3 w-full bg-slate-200 rounded-full mb-8 shadow-inner overflow-hidden">
+            <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-700 ease-in-out" style="width: 0%"></div>
+        </div>
+
+        <div id="quiz-container" class="space-y-6"></div>
+
+        <div class="mt-10 flex flex-col items-center gap-4">
+            <button id="action-btn" onclick="handleAction()" class="group relative w-full md:w-80 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-2xl hover:bg-blue-600 active:scale-95 transition-all overflow-hidden">
+                <span id="btn-text">Kiểm tra đáp án</span>
+            </button>
+            <p id="hint-text" class="text-slate-400 text-xs font-medium italic"></p>
+        </div>
+
+        <div id="completion-screen" class="hidden text-center py-16 bg-white rounded-3xl shadow-xl border-2 border-emerald-100 animate-in">
+            <div class="text-7xl mb-6">🏁</div>
+            <h2 class="text-3xl font-black text-slate-900 mb-3">Hoàn thành xuất sắc!</h2>
+            <p class="text-slate-500 mb-8 max-w-xs mx-auto">Bạn đã trả lời đúng tất cả các câu hỏi trong bộ đề.</p>
+            <button onclick="location.reload()" class="px-10 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-blue-600 transition-all">Luyện tập lại từ đầu</button>
+        </div>
+    </div>
+
+    <script>
+        const originalData = [
+            { id: 1, title: "Bài 3. MỘT SỐ THIẾT BỊ MẠNG THÔNG DỤNG", q: "Câu 12. Buổi thực hành kết nối mạng các thiết bị di động, một nhóm học sinh trao đổi nội dung sau:", options: [
+                { id: 'a', text: "Trên Windows 10 và 11, nhấp vào biểu tượng sóng trên thanh Taskbar để chọn và kết nối với trạm Wi-Fi gần.", isTrue: true },
+                { id: 'b', text: "Trên thiết bị dùng hệ điều hành Android, nhấn phím âm lượng liên tiếp 2 lần để quét các hệ thống Wi-Fi gần.", isTrue: false },
+                { id: 'c', text: "Trên iOS, vuốt màn hình từ trên xuống (hoặc từ dưới lên), chọn biểu tượng để xem danh sách các trạm Wi-Fi gần.", isTrue: true },
+                { id: 'd', text: "Để kết nối mạng LAN qua Wi-Fi, chọn trạm thuộc LAN đó. Nếu có khoá, yêu cầu nhập mật khẩu.", isTrue: true }
+            ]},
+            { id: 2, title: "Bài 3. MỘT SỐ THIẾT BỊ MẠNG THÔNG DỤNG", q: "Câu 13. Nhận định về kết nối mạng bằng cáp tín hiệu hoặc sóng Wi-Fi:", options: [
+                { id: 'a', text: "Wi-Fi là chữ viết tắt của cụm từ Wireless Fidelity.", isTrue: true },
+                { id: 'b', text: "Hầu hết các máy tính để bàn đều có sẵn khả năng kết nối Wi-Fi như máy tính xách tay hay điện thoại.", isTrue: false },
+                { id: 'c', text: "Để máy tính giao tiếp Internet thì chỉ cần cắm cáp mạng UTP vào cổng RJ45 của máy tính.", isTrue: false },
+                { id: 'd', text: "Muốn kết nối thiết bị di động vào LAN qua trạm bảo mật, ta cần gõ đúng mật khẩu của trạm đó.", isTrue: true }
+            ]},
+            { id: 3, title: "Bài 3. MỘT SỐ THIẾT BỊ MẠNG THÔNG DỤNG", q: "Câu 14. Nhận định về các thiết bị mạng tạo thành mạng máy tính:", options: [
+                { id: 'a', text: "Wi-Fi là thiết bị kết nối không dây trong mạng cục bộ.", isTrue: false },
+                { id: 'b', text: "Khi Switch gửi dữ liệu qua một cổng, tín hiệu sẽ được gửi đến tất cả các cổng còn lại.", isTrue: false },
+                { id: 'c', text: "Mỗi Router có một số cổng có thể kết nối trực tiếp vào LAN gọi là cổng LAN.", isTrue: true },
+                { id: 'd', text: "Modem dial-up được sử dụng phổ biến để kết nối Internet tốc độ cao trước khi có cáp quang.", isTrue: false }
+            ]},
+            { id: 4, title: "Bài 4. GIAO THỨC MẠNG", q: "Câu 9. Phân tích địa chỉ IP có dạng: 113.23.12.*", options: [
+                { id: 'a', text: "Địa chỉ IP trên của HongKong.", isTrue: false },
+                { id: 'b', text: "Có 3 cổng.", isTrue: false },
+                { id: 'c', text: "Dấu * được hiểu là nhận mọi giá trị.", isTrue: true },
+                { id: 'd', text: "Viết dưới dạng số nhị phân là 01110001 00010111 00001100 *.", isTrue: true }
+            ]},
+            { id: 5, title: "Bài 4. GIAO THỨC MẠNG", q: "Câu 10. Nhận xét về mạng máy tính và giao thức truyền thông:", options: [
+                { id: 'a', text: "Địa chỉ IP giống với địa chỉ MAC.", isTrue: false },
+                { id: 'b', text: "Mỗi địa chỉ IP là một số 4 bit.", isTrue: false },
+                { id: 'c', text: "Giao thức TCP chỉ đảm bảo chuyển dữ liệu giữa các mạng mà không đến ứng dụng cụ thể.", isTrue: false },
+                { id: 'd', text: "Tách dữ liệu thành nhiều gói cho phép truyền xen kẽ, tận dụng được đường truyền vật lý.", isTrue: true }
+            ]},
+            { id: 6, title: "Bài 4. GIAO THỨC MẠNG", q: "Câu 11. Đánh giá tính chính xác về vai trò của từng giao thức:", options: [
+                { id: 'a', text: "TCP/IP là bộ giao thức được sử dụng phổ biến nhất trong mạng Internet.", isTrue: true },
+                { id: 'b', text: "Giao thức HTTP được sử dụng để truyền tải email qua mạng internet.", isTrue: false },
+                { id: 'c', text: "Giao thức FTP được sử dụng để truyền tệp tin giữa các máy tính.", isTrue: true },
+                { id: 'd', text: "Giao thức IP chịu trách nhiệm định tuyến dữ liệu từ máy gửi đến máy nhận.", isTrue: true }
+            ]},
+            { id: 7, title: "Bài 4. GIAO THỨC MẠNG", q: "Câu 12. Phát biểu về IPv4 và IPv6:", options: [
+                { id: 'a', text: "Địa chỉ IPv4 có độ dài 4 byte, còn IPv6 là 6 byte.", isTrue: false },
+                { id: 'b', text: "Kho địa chỉ IPv4 chỉ có 2^32 và hiện nay đã cạn kiệt.", isTrue: true },
+                { id: 'c', text: "Địa chỉ IP được cấp cho người sử dụng, mỗi người có một địa chỉ IP riêng.", isTrue: false },
+                { id: 'd', text: "IP máy trạm LAN không thể trùng với IP của router thuộc mạng LAN đó.", isTrue: true }
+            ]},
+            { id: 8, title: "Bài 5. THỰC HÀNH CHIA SẺ TÀI NGUYÊN", q: "Câu 11. Nhận định về giao thức mạng (Network Protocol):", options: [
+                { id: 'a', text: "Hai máy tính muốn trao đổi dữ liệu phải dùng chung một giao thức mạng.", isTrue: true },
+                { id: 'b', text: "TCP/IP là tên của một giao thức duy nhất.", isTrue: false },
+                { id: 'c', text: "Giao thức TCP phụ trách tìm đường đi tốt nhất trên mạng cho các gói tin.", isTrue: false },
+                { id: 'd', text: "Giao thức IP định nghĩa việc trao đổi dữ liệu giữa hai máy tính trên mạng Internet.", isTrue: false }
+            ]},
+            { id: 9, title: "Bài 5. THỰC HÀNH CHIA SẺ TÀI NGUYÊN", q: "Câu 12. Chia sẻ máy in cho máy tính trong phòng tin học:", options: [
+                { id: 'a', text: "Phương pháp này phức tạp và yêu cầu máy in phải hỗ trợ mạng.", isTrue: false },
+                { id: 'b', text: "Nếu máy chủ gặp sự cố hoặc tắt nguồn, các máy khác không thể dùng máy in.", isTrue: true },
+                { id: 'c', text: "Người dùng có thể in từ bất kỳ máy nào trong mạng nếu máy in đang được chia sẻ.", isTrue: true },
+                { id: 'd', text: "Việc quản lí máy in tập trung dễ hơn nếu mạng lưới lớn và nhiều máy in.", isTrue: false }
+            ]},
+            { id: 10, title: "Bài 19. DỊCH VỤ SỬA CHỮA VÀ BẢO TRÌ", q: "Câu 12. Nghề dịch vụ trong ngành Công nghệ thông tin:", options: [
+                { id: 'a', text: "Sửa chữa, bảo trì máy tính cần thực hiện công việc liên quan tới cả phần cứng và phần mềm.", isTrue: true },
+                { id: 'b', text: "Cài đặt hoặc cập nhật driver là một công việc liên quan tới phần cứng.", isTrue: false },
+                { id: 'c', text: "Người làm nghề sửa chữa và bảo trì máy tính không cần kỹ năng giao tiếp.", isTrue: false },
+                { id: 'd', text: "Đối với việc sửa chữa, mức độ thành thạo là yếu tố quan trọng nhất.", isTrue: true }
+            ]},
+            { id: 11, title: "Bài 19. DỊCH VỤ SỬA CHỮA VÀ BẢO TRÌ", q: "Câu 13. Kiến thức và kỹ năng thiết yếu trong nghề bảo trì:", options: [
+                { id: 'a', text: "Mọi công việc đảm bảo máy tính hoạt động ổn định đều nằm trong nội dung bảo trì.", isTrue: true },
+                { id: 'b', text: "Kiểm soát hoạt động của máy tính là công việc thuộc về phần mềm.", isTrue: false },
+                { id: 'c', text: "Cần kỹ năng giao tiếp để hiểu yêu cầu khách hàng và tư vấn giải pháp.", isTrue: true },
+                { id: 'd', text: "Đòi hỏi bảo mật ngày càng cao, người làm nghề phải nắm vững biện pháp an toàn.", isTrue: true }
+            ]},
+            { id: 12, title: "Bài 20. NHÓM NGHỀ QUẢN TRỊ CNTT", q: "Câu 12. Nhóm nghề quản trị trong ngành Công nghệ thông tin:", options: [
+                { id: 'a', text: "Công việc chính là quản trị mạng, bảo mật hệ thống, quản trị và bảo trì hệ thống.", isTrue: true },
+                { id: 'b', text: "Công việc chuyên gia bảo mật bao gồm cài đặt, cập nhật để đảm bảo hiệu suất.", isTrue: false },
+                { id: 'c', text: "Chuyên gia quản trị mạng chỉ cần kiến thức chuyên sâu về Mạng máy tính.", isTrue: false },
+                { id: 'd', text: "Kỹ năng tự nghiên cứu, cập nhật kiến thức là rất cần thiết.", isTrue: true }
+            ]},
+            { id: 13, title: "Bài 20. NHÓM NGHỀ QUẢN TRỊ CNTT", q: "Câu 13. Nhu cầu nhân lực nhóm nghề quản trị:", options: [
+                { id: 'a', text: "Ngành học liên quan gồm Quản trị hệ thống, Kỹ thuật phần mềm...", isTrue: false },
+                { id: 'b', text: "Sự gia tăng thiết bị IoT đặt ra nhiều thách thức mới trong quản trị.", isTrue: true },
+                { id: 'c', text: "Nguy cơ tấn công mạng ngày càng tinh vi tạo ra nhu cầu lớn về chuyên gia mạng.", isTrue: true },
+                { id: 'd', text: "Tận dụng AI là đòi hỏi mới đối với chuyên gia bảo mật.", isTrue: true }
+            ]},
+            { id: 14, title: "Bài 21. HỘI THẢO HƯỚNG NGHỆP", q: "Câu 14. Quá trình chuẩn bị tổ chức hội thảo hướng nghiệp:", options: [
+                { id: 'a', text: "Hội thảo nhằm tìm hiểu vai trò chuyên viên CNTT trong y tế, giáo dục, tài chính...", isTrue: true },
+                { id: 'b', text: "Ban tổ chức hội thảo bao gồm đại diện từ mỗi nhóm thảo luận trong lớp.", isTrue: true },
+                { id: 'c', text: "Hội thảo phải tổ chức trực tuyến hoàn toàn, không có phần trực tiếp.", isTrue: false },
+                { id: 'd', text: "Các nhóm phải nộp bài trình bày trước hội thảo 2 ngày.", isTrue: false }
+            ]},
+            { id: 15, title: "Bài 21. HỘI THẢO HƯỚNG NGHỆP", q: "Câu 15. Quá trình chuẩn bị hội thảo lớp 12A:", options: [
+                { id: 'a', text: "Các nhóm phải thu thập và tổng hợp thông tin xây dựng bài trình bày.", isTrue: true },
+                { id: 'b', text: "Nhiệm vụ bao gồm báo cáo thử và hoàn thiện bài trước khi hội thảo diễn ra.", isTrue: true },
+                { id: 'c', text: "Ban tổ chức không cần cập nhật kế hoạch cho các nhóm trong quá trình chuẩn bị.", isTrue: false },
+                { id: 'd', text: "Các nhóm phải lập dàn ý cho bài trình bày ngay từ đầu.", isTrue: true }
+            ]},
+            { id: 16, title: "Bài 21. HỘI THẢO HƯỚNG NGHỆP", q: "Câu 16. Bạn M chọn ngành học đại học:", options: [
+                { id: 'a', text: "Được cung cấp thông tin về Nghề nghiệp và Ngành nghề.", isTrue: true },
+                { id: 'b', text: "Được Tư vấn và Định hướng Nghề nghiệp phù hợp.", isTrue: true },
+                { id: 'c', text: "Được kết nối với Nhà Tuyển dụng và Mạng lưới Chuyên nghiệp.", isTrue: true },
+                { id: 'd', text: "Chỉ cần tự mình tìm kiếm nhà tuyển dụng là đủ.", isTrue: false }
+            ]},
+            { id: 17, title: "Bài 21. HỘI THẢO HƯỚNG NGHỆP", q: "Câu 17. Đối tượng tham gia chương trình hướng nghiệp:", options: [
+                { id: 'a', text: "Người không liên quan đến lĩnh vực nghề nghiệp hoặc giáo dục.", isTrue: true },
+                { id: 'b', text: "Người đang tìm kiếm việc làm.", isTrue: false },
+                { id: 'c', text: "Người không đáp ứng điều kiện tham gia cụ thể.", isTrue: false },
+                { id: 'd', text: "Sinh viên đại học và cao đẳng sắp tốt nghiệp.", isTrue: true }
+            ]},
+            { id: 18, title: "Bài 22. THỰC HÀNH KẾT NỐI THIẾT BỊ SỐ", q: "Câu 12. Làm quen hệ thống thiết bị nhà thông minh:", options: [
+                { id: 'a', text: "Hẹn giờ công tắc đèn không cần cài phần mềm trên điện thoại.", isTrue: false },
+                { id: 'b', text: "Công nghệ Bluetooth chỉ truyền âm thanh, không truyền hình ảnh.", isTrue: false },
+                { id: 'c', text: "Nhà thông minh (Smart Home) có thể điều khiển qua Wi-Fi hoặc Bluetooth.", isTrue: true },
+                { id: 'd', text: "TV và máy chiếu thường kết nối qua cổng VGA hoặc HDMI.", isTrue: true }
+            ]},
+            { id: 19, title: "Bài 22. THỰC HÀNH KẾT NỐI THIẾT BỊ SỐ", q: "Câu 13. Sử dụng điện thoại điều khiển nhà thông minh:", options: [
+                { id: 'a', text: "Điện thoại có thể kết nối qua mạng Wi-Fi hoặc mạng di động.", isTrue: true },
+                { id: 'b', text: "Người dùng chỉ có thể điều khiển khi đang có mặt trong nhà.", isTrue: false },
+                { id: 'c', text: "Các thiết bị nhà thông minh cần Internet để điều khiển từ xa.", isTrue: true },
+                { id: 'd', text: "Điều khiển từ xa chỉ khả thi khi sử dụng Bluetooth.", isTrue: false }
+            ]},
+            { id: 20, title: "Bài 22. THỰC HÀNH KẾT NỐI THIẾT BỊ SỐ", q: "Câu 14. Lắp đặt hệ thống nhà thông minh:", options: [
+                { id: 'a', text: "Thiết bị nhà thông minh có thể điều khiển thông qua Internet.", isTrue: true },
+                { id: 'b', text: "Thiết bị số có thể kết nối bằng cả phương thức có dây và không dây.", isTrue: true },
+                { id: 'c', text: "Máy tính xách tay không có khả năng kết nối Bluetooth.", isTrue: false },
+                { id: 'd', text: "Để kết nối máy tính và Tivi ta chọn cổng HDMI, VGA.", isTrue: false }
+            ]},
+            { id: 21, title: "Bài 23. CHUẨN BỊ XÂY DỰNG TRANG WEB", q: "Câu 11. Các thành phần chính của trang web:", options: [
+                { id: 'a', text: "Header chứa logo, tên trang, thanh điều hướng... như bìa một cuốn sách.", isTrue: true },
+                { id: 'b', text: "Body chỉ chứa thông tin về thương hiệu và bản quyền.", isTrue: false },
+                { id: 'c', text: "Footer bao gồm bản quyền, bảo mật và liên kết mạng xã hội.", isTrue: true },
+                { id: 'd', text: "Favicon là logo thu nhỏ hiển thị trên tab trình duyệt.", isTrue: true }
+            ]},
+            { id: 22, title: "Bài 23. CHUẨN BỊ XÂY DỰNG TRANG WEB", q: "Câu 12. Các bước quan trọng xây dựng trang web:", options: [
+                { id: 'a', text: "Định hình ý tưởng gồm xác định mục đích, đối tượng và yêu cầu trang web.", isTrue: true },
+                { id: 'b', text: "Thiết kế mỹ thuật chỉ tập trung vào việc chọn màu và phông chữ.", isTrue: false },
+                { id: 'c', text: "Có thể dùng các công cụ miễn phí như Google Sites để làm web.", isTrue: true },
+                { id: 'd', text: "Chuẩn bị tư liệu chỉ gồm thiết kế favicon và logo.", isTrue: false }
+            ]},
+            { id: 23, title: "Bài 24. XÂY DỰNG PHẦN ĐẦU TRANG WEB", q: "Câu 11. Giao diện chính của Google Sites:", options: [
+                { id: 'a', text: "Phần trên cùng chứa ô tìm kiếm và biểu tượng ứng dụng Google.", isTrue: true },
+                { id: 'b', text: "Phần thứ hai chứa danh sách các trang người dùng đã mở trước đó.", isTrue: true },
+                { id: 'c', text: "Phần thứ ba cung cấp tùy chọn tạo trang web mới (trống hoặc mẫu).", isTrue: true },
+                { id: 'd', text: "Phần thứ ba chứa toàn bộ các chức năng thiết lập phần Header.", isTrue: false }
+            ]},
+            { id: 24, title: "Bài 24. XÂY DỰNG PHẦN ĐẦU TRANG WEB", q: "Câu 12. Chức năng trên giao diện tạo trang web Google Sites:", options: [
+                { id: 'a', text: "Dòng 'Nhập tên trang web' dùng để nhập logo và favicon.", isTrue: false },
+                { id: 'b', text: "Dòng 'Thay đổi hình ảnh' dùng để chọn kiểu bìa hoặc biểu ngữ.", isTrue: false },
+                { id: 'c', text: "Dòng 'Tiêu đề trang' dùng để nhập tên tệp lưu trữ trang web.", isTrue: false },
+                { id: 'd', text: "Dòng 'Trang web không có tiêu đề' cho phép nhập tiêu đề trang.", isTrue: true }
+            ]},
+            { id: 25, title: "Bài 25. XÂY DỰNG PHẦN THÂN VÀ CHÂN TRANG", q: "Câu 11. Đánh giá về dự án trang web lớp 12A:", options: [
+                { id: 'a', text: "Bảng chọn Chèn chỉ chứa các lệnh để chèn văn bản.", isTrue: false },
+                { id: 'b', text: "Lệnh 'Drive' cho phép chèn thông tin từ Google Drive vào trang web.", isTrue: true },
+                { id: 'c', text: "Bảng chọn Trang được sử dụng để thêm các khối nội dung vào trang.", isTrue: false },
+                { id: 'd', text: "Lệnh 'Nhúng' có thể chèn dữ liệu từ các ứng dụng Internet khác.", isTrue: true }
+            ]},
+            { id: 26, title: "Bài 25. XÂY DỰNG PHẦN THÂN VÀ CHÂN TRANG", q: "Câu 12. Thiết kế trang web 'Ngày hội STEM':", options: [
+                { id: 'a', text: "Nhóm lệnh đầu của bảng Chèn gồm Hộp văn bản, Hình ảnh, Drive, Nhúng.", isTrue: true },
+                { id: 'b', text: "Để chia trang hai cột, dùng biểu tượng khối trong Thành phần nội dung.", isTrue: true },
+                { id: 'c', text: "Nhóm lệnh thứ ba trong bảng chọn Chèn không chứa lệnh YouTube.", isTrue: false },
+                { id: 'd', text: "Có thể chỉnh kích thước và di chuyển đối tượng bằng cách kéo thả.", isTrue: true }
+            ]}
+        ];
+
+        let pendingIndices = [...Array(originalData.length).keys()];
+        let currentIndexInPending = 0;
+        let userChoices = {};
+        let mode = 'selection'; 
+        const totalQuestions = originalData.length;
+
+        function renderQuestion() {
+            const container = document.getElementById('quiz-container');
+            if (pendingIndices.length === 0) {
+                showCompletion();
+                return;
+            }
+
+            const actualIdx = pendingIndices[currentIndexInPending];
+            const item = originalData[actualIdx];
+            
+            let html = `
+                <div class="bg-white rounded-3xl p-6 md:p-10 shadow-xl border border-slate-100 animate-in">
+                    <div class="flex items-center gap-3 mb-6">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-tighter rounded-lg border border-blue-100">${item.title}</span>
+                    </div>
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-800 leading-snug mb-10">${item.q}</h2>
+                    <div class="space-y-6">
+            `;
+
+            item.options.forEach(opt => {
+                const choice = userChoices[opt.id];
+                const isChecked = mode === 'result';
+                
+                let trueBtnClass = "choice-btn flex-1 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ";
+                let trueIcon = "";
+                let falseBtnClass = "choice-btn flex-1 py-3 px-4 rounded-xl font-bold text-sm border-2 transition-all ";
+                let falseIcon = "";
+
+                if (!isChecked) {
+                    trueBtnClass += choice === true ? "btn-selected" : "bg-white border-slate-100 text-slate-400 hover:border-blue-200 hover:text-blue-500";
+                    falseBtnClass += choice === false ? "btn-selected" : "bg-white border-slate-100 text-slate-400 hover:border-blue-200 hover:text-blue-500";
+                } else {
+                    const isUserCorrect = choice === opt.isTrue;
+                    
+                    if (choice === true) {
+                        trueBtnClass += isUserCorrect ? "result-correct" : "result-wrong";
+                        trueIcon = isUserCorrect ? "✅ " : "❌ ";
+                    } else {
+                        trueBtnClass += "bg-slate-50 border-slate-100 text-slate-300 opacity-50";
+                    }
+
+                    if (choice === false) {
+                        falseBtnClass += isUserCorrect ? "result-correct" : "result-wrong";
+                        falseIcon = isUserCorrect ? "✅ " : "❌ ";
+                    } else {
+                        falseBtnClass += "bg-slate-50 border-slate-100 text-slate-300 opacity-50";
+                    }
+
+                    if (opt.isTrue) {
+                        trueBtnClass += " truth-outline";
+                        trueIcon = (choice === true ? trueIcon : "⭐ ") ;
+                    } else {
+                        falseBtnClass += " truth-outline";
+                        falseIcon = (choice === false ? falseIcon : "⭐ ") ;
+                    }
+                }
+
+                html += `
+                    <div class="space-y-3">
+                        <div class="text-sm font-semibold text-slate-700 flex items-start gap-2">
+                            <span class="text-blue-500 mt-0.5 font-black">${opt.id.toUpperCase()}.</span>
+                            <span>${opt.text}</span>
+                        </div>
+                        <div class="flex gap-4">
+                            <button onclick="selectOption('${opt.id}', true)" ${isChecked ? 'disabled' : ''} class="${trueBtnClass}">
+                                ${opt.isTrue && isChecked ? '<span class="truth-label">Đúng thực tế</span>' : ''}
+                                ${trueIcon} Đúng
+                            </button>
+                            <button onclick="selectOption('${opt.id}', false)" ${isChecked ? 'disabled' : ''} class="${falseBtnClass}">
+                                ${!opt.isTrue && isChecked ? '<span class="truth-label">Sai thực tế</span>' : ''}
+                                ${falseIcon} Sai
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            container.innerHTML = html;
+            updateUIState();
+        }
+
+        function updateUIState() {
+            document.getElementById('remaining-count').innerText = pendingIndices.length;
+            const progress = ((totalQuestions - pendingIndices.length) / totalQuestions) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            const btn = document.getElementById('action-btn');
+            const btnText = document.getElementById('btn-text');
+            const hint = document.getElementById('hint-text');
+
+            if (mode === 'selection') {
+                btnText.innerText = "Kiểm tra đáp án";
+                btn.className = "group relative w-full md:w-80 py-4 bg-slate-900 text-white font-bold rounded-2xl shadow-xl hover:bg-blue-600 active:scale-95 transition-all";
+                hint.innerText = "Chọn Đúng/Sai cho tất cả 4 ý trên.";
+            } else {
+                btnText.innerText = "Tiếp tục bài học";
+                btn.className = "group relative w-full md:w-80 py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-xl hover:bg-slate-900 active:scale-95 transition-all";
+                hint.innerText = "✅: Khớp | ❌: Sai | ⭐: Đáp án hệ thống";
+            }
+        }
+
+        window.selectOption = (optId, val) => {
+            userChoices[optId] = val;
+            renderQuestion();
+        }
+
+        function handleAction() {
+            if (mode === 'selection') {
+                if (Object.keys(userChoices).length < 4) {
+                    alert("Bạn cần hoàn thành cả 4 ý (a, b, c, d) trước!");
+                    return;
+                }
+                mode = 'result';
+                renderQuestion();
+            } else {
+                const actualIdx = pendingIndices[currentIndexInPending];
+                const item = originalData[actualIdx];
+                let isPerfect = true;
+                item.options.forEach(o => {
+                    if (userChoices[o.id] !== o.isTrue) isPerfect = false;
+                });
+
+                if (isPerfect) {
+                    pendingIndices.splice(currentIndexInPending, 1);
+                } else {
+                    const failedIdx = pendingIndices.splice(currentIndexInPending, 1)[0];
+                    pendingIndices.push(failedIdx);
+                }
+
+                if (currentIndexInPending >= pendingIndices.length) currentIndexInPending = 0;
+                userChoices = {};
+                mode = 'selection';
+                renderQuestion();
+            }
+        }
+
+        function showCompletion() {
+            document.getElementById('quiz-container').innerHTML = '';
+            document.getElementById('action-btn').parentElement.classList.add('hidden');
+            document.getElementById('completion-screen').classList.remove('hidden');
+            document.getElementById('progress-bar').style.width = `100%`;
+        }
+
+        renderQuestion();
+    </script>
+</body>
+</html>
